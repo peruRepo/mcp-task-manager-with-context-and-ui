@@ -38,6 +38,16 @@ export const TOOL_PARAMS = z.object({
         .optional()
         .default('todo') // Default value
         .describe("Optional initial status of the task. Defaults to 'todo' if not specified."), // Optional, enum, default
+
+    context: z.string()
+        .max(1000000, "Context cannot exceed 1000000 characters.")
+        .optional()
+        .describe("Optional large context or analysis information for this task."),
+
+    paused: z.boolean()
+        .optional()
+        .default(false)
+        .describe("Optional flag indicating if the task is paused. Defaults to false."),
 });
 
 // Define the expected type for arguments based on the Zod schema

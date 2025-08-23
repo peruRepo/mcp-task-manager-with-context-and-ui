@@ -41,12 +41,27 @@ export const UPDATE_TASK_BASE_SCHEMA = z.object({
         .max(50, "A task cannot have more than 50 dependencies.")
         .optional()
         .describe("Optional. The complete list of task IDs (UUIDs) that this task depends on. Replaces the existing list entirely. Max 50 dependencies."), // Optional, array of UUID strings, limit
+
+    context: z.string()
+        .max(1000000, "Context cannot exceed 1000000 characters.")
+        .optional()
+        .describe("Optional. The large context or analysis information for the task."),
+
+    paused: z.boolean()
+        .optional()
+        .describe("Optional. Flag indicating if the task is paused."),
 });
 
 // Refined schema for validation and type inference
 export const TOOL_PARAMS = UPDATE_TASK_BASE_SCHEMA.refine(
-    data => data.description !== undefined || data.priority !== undefined || data.dependencies !== undefined, {
-        message: "At least one field to update (description, priority, or dependencies) must be provided.",
+    data =>
+        data.description !== undefined ||
+        data.priority !== undefined ||
+        data.dependencies !== undefined ||
+        data.context !== undefined ||
+        data.paused !== undefined,
+    {
+        message: "At least one field to update (description, priority, dependencies, context, or paused) must be provided.",
         // path: [], // No specific path, applies to the object
     }
 );

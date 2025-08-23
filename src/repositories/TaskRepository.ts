@@ -10,6 +10,8 @@ export interface TaskData {
     description: string;
     status: 'todo' | 'in-progress' | 'review' | 'done';
     priority: 'high' | 'medium' | 'low';
+    context: string | null;
+    paused: number; // 0 = proceed, 1 = paused
     created_at: string; // ISO8601
     updated_at: string; // ISO8601
 }
@@ -36,10 +38,10 @@ export class TaskRepository {
             this.insertTaskStmt = this.db.prepare(`
                 INSERT INTO tasks (
                     task_id, project_id, parent_task_id, description,
-                    status, priority, created_at, updated_at
+                    status, priority, context, paused, created_at, updated_at
                 ) VALUES (
                     @task_id, @project_id, @parent_task_id, @description,
-                    @status, @priority, @created_at, @updated_at
+                    @status, @priority, @context, @paused, @created_at, @updated_at
                 )
             `);
 
@@ -106,7 +108,7 @@ export class TaskRepository {
      */
     public findByProjectId(projectId: string, statusFilter?: TaskData['status']): TaskData[] {
         let sql = `
-            SELECT task_id, project_id, parent_task_id, description, status, priority, created_at, updated_at
+            SELECT task_id, project_id, parent_task_id, description, status, priority, context, paused, created_at, updated_at
             FROM tasks
             WHERE project_id = ?
         `;
@@ -142,7 +144,7 @@ export class TaskRepository {
      */
     public findById(projectId: string, taskId: string): TaskData | undefined {
         const sql = `
-            SELECT task_id, project_id, parent_task_id, description, status, priority, created_at, updated_at
+            SELECT task_id, project_id, parent_task_id, description, status, priority, context, paused, created_at, updated_at
             FROM tasks
             WHERE project_id = ? AND task_id = ?
         `;
@@ -164,7 +166,7 @@ export class TaskRepository {
      */
     public findSubtasks(parentTaskId: string): TaskData[] {
         const sql = `
-            SELECT task_id, project_id, parent_task_id, description, status, priority, created_at, updated_at
+            SELECT task_id, project_id, parent_task_id, description, status, priority, context, paused, created_at, updated_at
             FROM tasks
             WHERE parent_task_id = ?
             ORDER BY created_at ASC
@@ -303,7 +305,7 @@ export class TaskRepository {
         // This query finds tasks in the project with status 'todo'
         // AND for which no dependency exists OR all existing dependencies have status 'done'.
         const sql = `
-            SELECT t.task_id, t.project_id, t.parent_task_id, t.description, t.status, t.priority, t.created_at, t.updated_at
+            SELECT t.task_id, t.project_id, t.parent_task_id, t.description, t.status, t.priority, t.context, t.paused, t.created_at, t.updated_at
             FROM tasks t
             WHERE t.project_id = ? AND t.status = 'todo'
             AND NOT EXISTS (
@@ -312,6 +314,7 @@ export class TaskRepository {
                 JOIN tasks dep_task ON td.depends_on_task_id = dep_task.task_id
                 WHERE td.task_id = t.task_id AND dep_task.status != 'done'
             )
+            AND t.paused = 0
             ORDER BY
                 CASE t.priority
                     WHEN 'high' THEN 1
@@ -339,7 +342,7 @@ export class TaskRepository {
      */
     public findAllTasksForProject(projectId: string): TaskData[] {
         const sql = `
-            SELECT task_id, project_id, parent_task_id, description, status, priority, created_at, updated_at
+            SELECT task_id, project_id, parent_task_id, description, status, priority, context, paused, created_at, updated_at
             FROM tasks
             WHERE project_id = ?
             ORDER BY created_at ASC
@@ -394,13 +397,13 @@ export class TaskRepository {
     public updateTask(
         projectId: string,
         taskId: string,
-        updatePayload: { description?: string; priority?: TaskData['priority']; dependencies?: string[] },
+        updatePayload: { description?: string; priority?: TaskData['priority']; dependencies?: string[]; context?: string | null; paused?: number },
         timestamp: string
     ): TaskData {
 
         const transaction = this.db.transaction(() => {
             const setClauses: string[] = [];
-            const params: (string | null)[] = [];
+            const params: (string | number | null)[] = [];
 
             if (updatePayload.description !== undefined) {
                 setClauses.push('description = ?');
@@ -409,6 +412,14 @@ export class TaskRepository {
             if (updatePayload.priority !== undefined) {
                 setClauses.push('priority = ?');
                 params.push(updatePayload.priority);
+            }
+            if (updatePayload.context !== undefined) {
+                setClauses.push('context = ?');
+                params.push(updatePayload.context);
+            }
+            if (updatePayload.paused !== undefined) {
+                setClauses.push('paused = ?');
+                params.push(updatePayload.paused);
             }
 
             // Always update the timestamp

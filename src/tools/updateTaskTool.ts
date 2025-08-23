@@ -25,6 +25,8 @@ export const updateTaskTool = (server: McpServer, taskService: TaskService): voi
                 description: args.description,
                 priority: args.priority,
                 dependencies: args.dependencies,
+                context: args.context,
+                paused: args.paused,
             });
 
             // Format the successful response

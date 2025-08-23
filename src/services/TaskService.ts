@@ -11,6 +11,8 @@ export interface AddTaskInput {
     dependencies?: string[];
     priority?: 'high' | 'medium' | 'low';
     status?: 'todo' | 'in-progress' | 'review' | 'done';
+    context?: string;
+    paused?: boolean;
 }
 
 // Options for listing tasks
@@ -78,6 +80,8 @@ export class TaskService {
             description: input.description,
             status: input.status ?? 'todo',
             priority: input.priority ?? 'medium',
+            context: input.context ?? null,
+            paused: input.paused ? 1 : 0,
             created_at: now,
             updated_at: now,
         };
@@ -244,6 +248,8 @@ export class TaskService {
                     description: description, // Assuming length validation done by Zod
                     status: 'todo', // Default status
                     priority: 'medium', // Default priority
+                    context: null,
+                    paused: 0,
                     created_at: now,
                     updated_at: now,
                 };
@@ -340,13 +346,21 @@ export class TaskService {
         description?: string;
         priority?: TaskData['priority'];
         dependencies?: string[];
+        context?: string;
+        paused?: boolean;
     }): Promise<FullTaskData> {
         const { project_id, task_id } = input;
         logger.info(`[TaskService] Attempting to update task ${task_id} in project ${project_id}`);
 
         // 1. Validate that at least one field is being updated
-        if (input.description === undefined && input.priority === undefined && input.dependencies === undefined) {
-            throw new ValidationError("At least one field (description, priority, or dependencies) must be provided for update.");
+        if (
+            input.description === undefined &&
+            input.priority === undefined &&
+            input.dependencies === undefined &&
+            input.context === undefined &&
+            input.paused === undefined
+        ) {
+            throw new ValidationError("At least one field (description, priority, dependencies, context, or paused) must be provided for update.");
         }
 
         // 2. Validate Project Existence (using repo method)
@@ -381,10 +395,12 @@ export class TaskService {
         }
 
         // 5. Prepare payload for repository
-        const updatePayload: { description?: string; priority?: TaskData['priority']; dependencies?: string[] } = {};
+        const updatePayload: { description?: string; priority?: TaskData['priority']; dependencies?: string[]; context?: string | null; paused?: number } = {};
         if (input.description !== undefined) updatePayload.description = input.description;
         if (input.priority !== undefined) updatePayload.priority = input.priority;
         if (input.dependencies !== undefined) updatePayload.dependencies = input.dependencies;
+        if (input.context !== undefined) updatePayload.context = input.context;
+        if (input.paused !== undefined) updatePayload.paused = input.paused ? 1 : 0;
 
         // 6. Call Repository update method
         try {

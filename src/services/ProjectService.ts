@@ -181,6 +181,8 @@ export class ProjectService {
                     description: task.description,
                     status: task.status,
                     priority: task.priority,
+                    context: task.context ?? null,
+                    paused: task.paused ?? 0,
                     created_at: task.created_at,
                     updated_at: task.updated_at,
                 };

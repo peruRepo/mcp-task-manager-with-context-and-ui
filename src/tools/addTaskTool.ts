@@ -25,6 +25,8 @@ export const addTaskTool = (server: McpServer, taskService: TaskService): void =
                 dependencies: args.dependencies, // Pass optional fields
                 priority: args.priority,
                 status: args.status,
+                context: args.context,
+                paused: args.paused,
             });
 
             // Format the successful response according to MCP standards
