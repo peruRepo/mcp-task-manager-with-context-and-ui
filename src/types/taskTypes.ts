@@ -20,6 +20,8 @@ export interface Task {
     description: string;
     status: TaskStatus;
     priority: TaskPriority;
+    context: string | null;
+    paused: boolean;
     created_at: string; // ISO8601 format
     updated_at: string; // ISO8601 format
     dependencies?: string[]; // Array of task_ids this task depends on
@@ -34,6 +36,8 @@ export interface TaskUpdatePayload {
     description?: string;
     priority?: TaskPriority;
     dependencies?: string[]; // Represents the complete new list of dependencies
+    context?: string;
+    paused?: boolean;
 }
 
 /**
@@ -47,6 +51,8 @@ export interface TaskDbObject {
     description: string;
     status: TaskStatus;
     priority: TaskPriority;
+    context: string | null;
+    paused: number;
     created_at: string;
     updated_at: string;
 }

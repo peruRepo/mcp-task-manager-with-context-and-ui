@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT NOT NULL,
     status TEXT NOT NULL CHECK(status IN ('todo', 'in-progress', 'review', 'done')),
     priority TEXT NOT NULL CHECK(priority IN ('high', 'medium', 'low')),
+    context TEXT,
+    paused INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL, -- ISO8601 format
     updated_at TEXT NOT NULL, -- ISO8601 format
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
