@@ -17,11 +17,16 @@
     <input id="projectId" placeholder="Project ID" />
     <button id="loadBtn">Load Project</button>
   </div>
-  <div id="projectArea" style="display:none;">
-    <h2 id="projectName"></h2>
-    <ul id="taskList"></ul>
-  </div>
-  <script>
+    <div id="projectArea" style="display:none;">
+      <h2 id="projectName"></h2>
+      <ul id="taskList"></ul>
+      <div id="queueArea" style="display:none;">
+        <h2>Work Queue</h2>
+        <ul id="queueList"></ul>
+        <button id="clearQueueBtn">Clear Queue</button>
+      </div>
+    </div>
+    <script>
     async function loadProject() {
       const projectId = document.getElementById('projectId').value.trim();
       if (!projectId) return;
@@ -62,9 +67,35 @@
           }
         });
       }
-      renderTasks(data.tasks, container);
-    }
-    document.getElementById('loadBtn').addEventListener('click', loadProject);
-  </script>
+        renderTasks(data.tasks, container);
+        await loadQueue(projectId);
+      }
+      async function loadQueue(projectId) {
+        const res = await fetch('/api/work-queue/' + encodeURIComponent(projectId));
+        if (!res.ok) return;
+        const data = await res.json();
+        const area = document.getElementById('queueArea');
+        const list = document.getElementById('queueList');
+        list.innerHTML = '';
+        data.queue.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = item.request;
+          li.dataset.queueId = item.queue_id;
+          list.appendChild(li);
+        });
+        area.style.display = data.queue.length ? 'block' : 'none';
+      }
+      document.getElementById('loadBtn').addEventListener('click', loadProject);
+      document.getElementById('clearQueueBtn').addEventListener('click', async () => {
+        const projectId = document.getElementById('projectId').value.trim();
+        const ids = Array.from(document.querySelectorAll('#queueList li')).map(li => li.dataset.queueId);
+        await fetch('/api/work-queue/' + encodeURIComponent(projectId), {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ queue_ids: ids })
+        });
+        await loadQueue(projectId);
+      });
+    </script>
 </body>
 </html>
