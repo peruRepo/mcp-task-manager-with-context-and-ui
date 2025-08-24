@@ -75,6 +75,19 @@ export class ProjectService {
     }
 
     /**
+     * Lists all projects.
+     */
+    public async listProjects(): Promise<ProjectData[]> {
+        logger.info(`[ProjectService] Listing all projects`);
+        try {
+            return this.projectRepository.findAll();
+        } catch (error) {
+            logger.error(`[ProjectService] Error listing projects:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Exports all data for a given project as a JSON string.
      */
     public async exportProject(projectId: string): Promise<string> {

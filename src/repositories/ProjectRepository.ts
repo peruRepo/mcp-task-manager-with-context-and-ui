@@ -74,5 +74,18 @@ export class ProjectRepository {
         }
     }
 
-    // Add other methods as needed (e.g., update, list)
+    /**
+     * Lists all projects.
+     * @returns Array of project records.
+     */
+    public findAll(): ProjectData[] {
+        const sql = `SELECT project_id, name, created_at FROM projects ORDER BY created_at DESC`;
+        try {
+            const stmt = this.db.prepare(sql);
+            return stmt.all() as ProjectData[];
+        } catch (error) {
+            logger.error(`[ProjectRepository] Failed to list projects:`, error);
+            throw error; // Re-throw
+        }
+    }
 }

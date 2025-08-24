@@ -55,6 +55,7 @@ export class ConfigurationManager {
                 }
             } else {
                 // Basic busy wait if locked (consider a more robust async lock if high contention is expected)
+                // eslint-disable-next-line no-empty
                 while (ConfigurationManager.instanceLock) { }
                 // Re-check instance after wait
                 if (!ConfigurationManager.instance) {
