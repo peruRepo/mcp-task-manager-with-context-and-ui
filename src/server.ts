@@ -9,7 +9,8 @@ import { fileURLToPath } from "node:url";
 import { DatabaseManager } from "./db/DatabaseManager.js";
 import { ProjectRepository } from "./repositories/ProjectRepository.js";
 import { TaskRepository } from "./repositories/TaskRepository.js";
-import { ProjectService, TaskService } from "./services/index.js";
+import { WorkQueueRepository } from "./repositories/WorkQueueRepository.js";
+import { ProjectService, TaskService, WorkQueueService } from "./services/index.js";
 
 const main = async () => {
     try {
@@ -36,6 +37,8 @@ const main = async () => {
         const taskRepository = new TaskRepository(db);
         const projectService = new ProjectService(db, projectRepository, taskRepository);
         const taskService = new TaskService(db, taskRepository, projectRepository);
+        const workQueueRepository = new WorkQueueRepository(db);
+        const workQueueService = new WorkQueueService(workQueueRepository, projectRepository);
 
         const httpServer = http.createServer(async (req, res) => {
             try {
@@ -58,6 +61,38 @@ const main = async () => {
                     const tasks = await taskService.listTasks({ project_id: projectId, include_subtasks: true });
                     res.setHeader("Content-Type", "application/json");
                     res.end(JSON.stringify({ project, tasks }));
+                    return;
+                }
+
+                // API: Work queue - list items for a project
+                if (req.method === "GET" && req.url.startsWith("/api/work-queue/")) {
+                    const projectId = decodeURIComponent(req.url.split("/").pop() || "");
+                    const queue = await workQueueService.list(projectId);
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ queue }));
+                    return;
+                }
+
+                // API: Work queue - clear items for a project
+                if (req.method === "DELETE" && req.url.startsWith("/api/work-queue/")) {
+                    const projectId = decodeURIComponent(req.url.split("/").pop() || "");
+                    let body = "";
+                    req.on("data", chunk => {
+                        body += chunk;
+                    });
+                    req.on("end", async () => {
+                        try {
+                            const data = JSON.parse(body || "{}");
+                            const ids: string[] = Array.isArray(data.queue_ids) ? data.queue_ids : [];
+                            await workQueueService.clear(projectId, ids);
+                            res.statusCode = 204;
+                            res.end();
+                        } catch (err) {
+                            res.statusCode = 400;
+                            res.setHeader("Content-Type", "application/json");
+                            res.end(JSON.stringify({ error: (err as Error).message }));
+                        }
+                    });
                     return;
                 }
 
