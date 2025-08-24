@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Project Editor</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    textarea { width: 100%; height: 4em; }
+    ul { list-style-type: none; padding-left: 1em; }
+    li { margin-bottom: 1em; }
+    .task { border: 1px solid #ccc; padding: 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Project Viewer</h1>
+  <div>
+    <input id="projectId" placeholder="Project ID" />
+    <button id="loadBtn">Load Project</button>
+  </div>
+  <div id="projectArea" style="display:none;">
+    <h2 id="projectName"></h2>
+    <ul id="taskList"></ul>
+  </div>
+  <script>
+    async function loadProject() {
+      const projectId = document.getElementById('projectId').value.trim();
+      if (!projectId) return;
+      const res = await fetch('/api/projects/' + encodeURIComponent(projectId));
+      if (!res.ok) { alert('Project not found'); return; }
+      const data = await res.json();
+      document.getElementById('projectArea').style.display = 'block';
+      document.getElementById('projectName').textContent = data.project.name;
+      const container = document.getElementById('taskList');
+      container.innerHTML = '';
+      function renderTasks(tasks, parent) {
+        tasks.forEach(task => {
+          const li = document.createElement('li');
+          li.className = 'task';
+          li.innerHTML = `
+            <div><strong>${task.description}</strong></div>
+            <div><label>Description<br><textarea class="desc">${task.description}</textarea></label></div>
+            <div><label>Context<br><textarea class="ctx">${task.context || ''}</textarea></label></div>
+            <div><label>Paused <input type="checkbox" class="paused" ${task.paused ? 'checked' : ''}></label></div>
+            <button class="save">Save</button>
+          `;
+          li.querySelector('.save').addEventListener('click', async () => {
+            const desc = li.querySelector('.desc').value;
+            const ctx = li.querySelector('.ctx').value;
+            const paused = li.querySelector('.paused').checked;
+            const resp = await fetch('/api/tasks/' + task.task_id, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ project_id: projectId, description: desc, context: ctx, paused })
+            });
+            alert(resp.ok ? 'Saved' : 'Error');
+          });
+          parent.appendChild(li);
+          if (task.subtasks && task.subtasks.length > 0) {
+            const subUl = document.createElement('ul');
+            parent.appendChild(subUl);
+            renderTasks(task.subtasks, subUl);
+          }
+        });
+      }
+      renderTasks(data.tasks, container);
+    }
+    document.getElementById('loadBtn').addEventListener('click', loadProject);
+  </script>
+</body>
+</html>
