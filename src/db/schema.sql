@@ -54,3 +54,17 @@ CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
 -- Indexes on task_dependencies table
 CREATE INDEX IF NOT EXISTS idx_task_dependencies_task_id ON task_dependencies(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_dependencies_depends_on_task_id ON task_dependencies(depends_on_task_id);
+
+-- Table: work_queue
+-- Stores pending work requests for projects
+CREATE TABLE IF NOT EXISTS work_queue (
+    queue_id TEXT PRIMARY KEY NOT NULL, -- UUID
+    project_id TEXT NOT NULL,
+    request TEXT NOT NULL,
+    created_at TEXT NOT NULL, -- ISO8601 format
+    FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+-- Indexes on work_queue table
+CREATE INDEX IF NOT EXISTS idx_work_queue_project_id ON work_queue(project_id);
+CREATE INDEX IF NOT EXISTS idx_work_queue_created_at ON work_queue(created_at);

@@ -4,7 +4,8 @@ import { logger } from "../utils/index.js"; // Now using barrel file
 import { DatabaseManager } from "../db/DatabaseManager.js";
 import { ProjectRepository } from "../repositories/ProjectRepository.js";
 import { TaskRepository } from "../repositories/TaskRepository.js"; // Added TaskRepository import
-import { ProjectService, TaskService } from "../services/index.js"; // Using barrel file, added TaskService
+import { WorkQueueRepository } from "../repositories/WorkQueueRepository.js";
+import { ProjectService, TaskService, WorkQueueService } from "../services/index.js"; // Using barrel file, added TaskService
 
 // Import tool registration functions
 // import { exampleTool } from "./exampleTool.js"; // Commenting out example
@@ -20,6 +21,9 @@ import { importProjectTool } from "./importProjectTool.js";
 import { updateTaskTool } from "./updateTaskTool.js"; // Import the new tool
 import { deleteTaskTool } from "./deleteTaskTool.js"; // Import deleteTask tool
 import { deleteProjectTool } from "./deleteProjectTool.js"; // Import deleteProject tool
+import { enqueueRequestTool } from "./enqueueRequestTool.js";
+import { getWorkQueueTool } from "./getWorkQueueTool.js";
+import { clearWorkQueueTool } from "./clearWorkQueueTool.js";
 // import { yourTool } from "./yourTool.js"; // Add other new tool imports here
 
 /**
@@ -40,10 +44,12 @@ export function registerTools(server: McpServer): void {
         // Instantiate Repositories
         const projectRepository = new ProjectRepository(db);
         const taskRepository = new TaskRepository(db); // Instantiate TaskRepository
+        const workQueueRepository = new WorkQueueRepository(db);
 
         // Instantiate Services
         const projectService = new ProjectService(db, projectRepository, taskRepository); // Pass db and both repos
         const taskService = new TaskService(db, taskRepository, projectRepository); // Instantiate TaskService, passing db and repos
+        const workQueueService = new WorkQueueService(workQueueRepository, projectRepository);
 
         // --- Register Tools ---
         // Register each tool, passing necessary services
@@ -62,6 +68,9 @@ export function registerTools(server: McpServer): void {
         updateTaskTool(server, taskService); // Register the new updateTask tool
         deleteTaskTool(server, taskService); // Register deleteTask tool
         deleteProjectTool(server, projectService); // Register deleteProject tool (uses ProjectService)
+        enqueueRequestTool(server, workQueueService);
+        getWorkQueueTool(server, workQueueService);
+        clearWorkQueueTool(server, workQueueService);
         // ... etc.
 
         logger.info("All tools registered successfully.");
