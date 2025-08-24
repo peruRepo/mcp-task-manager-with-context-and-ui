@@ -77,13 +77,19 @@
         const area = document.getElementById('queueArea');
         const list = document.getElementById('queueList');
         list.innerHTML = '';
-        data.queue.forEach(item => {
+        if (data.queue.length === 0) {
           const li = document.createElement('li');
-          li.textContent = item.request;
-          li.dataset.queueId = item.queue_id;
+          li.textContent = 'No queued requests';
           list.appendChild(li);
-        });
-        area.style.display = data.queue.length ? 'block' : 'none';
+        } else {
+          data.queue.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item.request;
+            li.dataset.queueId = item.queue_id;
+            list.appendChild(li);
+          });
+        }
+        area.style.display = 'block';
       }
       document.getElementById('loadBtn').addEventListener('click', loadProject);
       document.getElementById('clearQueueBtn').addEventListener('click', async () => {
