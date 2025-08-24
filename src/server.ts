@@ -49,6 +49,13 @@ const main = async () => {
                 }
 
                 // API: Get project with tasks
+                if (req.method === "GET" && req.url === "/api/projects") {
+                    const projects = await projectService.listProjects();
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ projects }));
+                    return;
+                }
+
                 if (req.method === "GET" && req.url.startsWith("/api/projects/")) {
                     const projectId = decodeURIComponent(req.url.split("/").pop() || "");
                     const project = await projectService.getProjectById(projectId);

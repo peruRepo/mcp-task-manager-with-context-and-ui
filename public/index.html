@@ -17,6 +17,13 @@
     <input id="projectId" placeholder="Project ID" />
     <button id="loadBtn">Load Project</button>
   </div>
+  <h2>Available Projects</h2>
+  <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr><th>Project ID</th><th>Description</th></tr>
+    </thead>
+    <tbody id="projectsTableBody"></tbody>
+  </table>
     <div id="projectArea" style="display:none;">
       <h2 id="projectName"></h2>
       <ul id="taskList"></ul>
@@ -27,9 +34,32 @@
       </div>
     </div>
     <script>
-    async function loadProject() {
-      const projectId = document.getElementById('projectId').value.trim();
+    async function loadProjects() {
+      const res = await fetch('/api/projects');
+      if (!res.ok) return;
+      const data = await res.json();
+      const tbody = document.getElementById('projectsTableBody');
+      tbody.innerHTML = '';
+      data.projects.forEach(p => {
+        const tr = document.createElement('tr');
+        const idTd = document.createElement('td');
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = p.project_id;
+        link.addEventListener('click', e => { e.preventDefault(); loadProject(p.project_id); });
+        idTd.appendChild(link);
+        const descTd = document.createElement('td');
+        descTd.textContent = p.name;
+        tr.appendChild(idTd);
+        tr.appendChild(descTd);
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadProject(projectId) {
+      projectId = projectId || document.getElementById('projectId').value.trim();
       if (!projectId) return;
+      document.getElementById('projectId').value = projectId;
       const res = await fetch('/api/projects/' + encodeURIComponent(projectId));
       if (!res.ok) { alert('Project not found'); return; }
       const data = await res.json();
@@ -88,10 +118,10 @@
             li.dataset.queueId = item.queue_id;
             list.appendChild(li);
           });
-        }
-        area.style.display = 'block';
       }
-      document.getElementById('loadBtn').addEventListener('click', loadProject);
+      area.style.display = 'block';
+    }
+      document.getElementById('loadBtn').addEventListener('click', () => loadProject());
       document.getElementById('clearQueueBtn').addEventListener('click', async () => {
         const projectId = document.getElementById('projectId').value.trim();
         const ids = Array.from(document.querySelectorAll('#queueList li')).map(li => li.dataset.queueId);
@@ -102,6 +132,7 @@
         });
         await loadQueue(projectId);
       });
+      loadProjects();
     </script>
 </body>
 </html>
